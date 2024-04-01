@@ -1,0 +1,26 @@
+name = "line-bot-sample"
+compatibility_date = "2023-12-01"
+
+[vars]
+LINE_CHANNEL_ACCESS_TOKEN = ""
+
+[[d1_databases]]
+binding = "DB" # i.e. available in your Worker on env.DB
+database_name = "ticket-sales"
+database_id = ""
+
+# [triggers]
+# 15分ごとに実行
+#crons = ["*/15 * * * *"]
+# [[kv_namespaces]]
+# binding = "MY_KV_NAMESPACE"
+# id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+# [[r2_buckets]]
+# binding = "MY_BUCKET"
+# bucket_name = "my-bucket"
+
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "my-database"
+# database_id = ""
