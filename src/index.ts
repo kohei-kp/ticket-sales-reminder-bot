@@ -90,53 +90,27 @@ async function textEventHandler(
         console.error(err)
       }
     }
-  } else {
-    await fetch('https://api.line.me/v2/bot/message/reply', {
-      body: JSON.stringify({
-        replyToken,
-        messages: [response],
-      }),
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-      },
-    })
   }
 }
-
-app.get('test', async (c) => {
-  const db = c.env.DB
-  const query = `SELECT * FROM sales WHERE SUBSTR(ticket_sales_date, 1, 10) = CURRENT_DATE`
-  let { results } = await db.prepare(query).all()
-  console.log(results)
-  return c.json(results)
-})
 
 async function scheduled(event: any, env: any, ctx: any) {
   console.log('scheduled', event, ctx)
 
-  // ここからwebhookを叩く
   const accessToken = env.LINE_CHANNEL_ACCESS_TOKEN
   const db = env.DB
-  const query = `SELECT * FROM sales WHERE DATE(ticket_sales_date) = DATE('now');`
+
+  // 1時間以内にチケット発売のイベントを通知する
+  const query = `SELECT * FROM sales WHERE ticket_sales_date BETWEEN datetime('now', '+9 hour') AND datetime('now', '+10 hour');`
+
   try {
     let { results } = await db.prepare(query).all()
-    let messages = results.map((result: any) => {
-      return {
-        type: 'text',
-        text: `以下のチケ発が1時間後！！！。\n${result.event_name} ${result.ticket_sales_date}\n${result.event_url}`,
-      }
-    })
-    console.log(messages)
+    const messages = results.map(
+      (result: any) => `${result.event_name} ${result.ticket_sales_date}\n${result.event_url}`
+    )
+    const message = '1時間以内にチケ発！！！\n' + messages.join('\n----------------------\n')
 
     if (messages.length === 0) {
-      messages = [
-        {
-          type: 'text',
-          text: '本日のチケット発売はありません',
-        },
-      ]
+      return
     }
 
     await fetch('https://api.line.me/v2/bot/message/broadcast', {
@@ -146,7 +120,12 @@ async function scheduled(event: any, env: any, ctx: any) {
         Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({
-        messages,
+        messages: [
+          {
+            type: 'text',
+            text: message,
+          },
+        ],
       }),
     })
   } catch (err: unknown) {
@@ -158,5 +137,5 @@ async function scheduled(event: any, env: any, ctx: any) {
 
 export default {
   fetch: app.fetch,
-  // scheduled,
+  scheduled,
 }
