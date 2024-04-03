@@ -52,17 +52,21 @@ async function textEventHandler(
 
   // 今日のチケ発 というメッセージが来たら、D1から一覧を取得して返信する
   if (text.includes('チケ発')) {
-    const query = `SELECT * FROM sales WHERE DATE(ticket_sales_date) = DATE('now');`
+    const query = `SELECT * FROM sales WHERE DATE(ticket_sales_date) = DATE('now', '+9 hour');`
     try {
       let { results } = await db.prepare(query).all()
-      let messages: TextMessage[] = results.map((result: any) => {
-        return {
-          type: 'text',
-          text: `${result.event_name} ${result.ticket_sales_date}\n${result.event_url}`,
-        }
+      let adjustMessages: string[] = results.map((result: any) => {
+        return `${result.event_name} ${result.ticket_sales_date}\n${result.event_url}`
       })
 
-      if (messages.length === 0) {
+      let messages: TextMessage[] = [
+        {
+          type: 'text',
+          text: adjustMessages.join('\n-------------------------------\n'),
+        },
+      ]
+
+      if (adjustMessages.length === 0) {
         messages = [
           {
             type: 'text',
@@ -162,7 +166,8 @@ async function scheduled(event: any, env: any, ctx: any) {
     const adjustMessages = results.map(
       (result: any) => `${result.event_name} ${result.ticket_sales_date}\n${result.event_url}`
     )
-    const message = '1時間以内にチケ発！！！\n' + adjustMessages.join('\n----------------------\n')
+    const message =
+      '1時間以内にチケ発！！！\n' + adjustMessages.join('\n-------------------------------\n')
 
     const messages: TextMessage[] = [
       {
